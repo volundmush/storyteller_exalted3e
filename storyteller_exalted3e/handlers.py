@@ -4,7 +4,7 @@ from athanor.utils import partial_match, validate_name
 import storyteller
 from storyteller.utils import dramatic_capitalize
 
-from ..handlers import StatHandler, PowerHandler, StatPowerHandler, CustomPowerHandler
+from storyteller.handlers import StatHandler, PowerHandler, StatPowerHandler, CustomPowerHandler
 
 
 class AbilityHandler(StatHandler):

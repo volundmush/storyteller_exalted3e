@@ -8,7 +8,7 @@ from storyteller.handlers import (
     AttributeHandler,
 )
 from storyteller.handlers import MeritHandler, FlawHandler
-from ..handlers import (
+from .handlers import (
     AbilityHandler,
     StyleHandler,
     XCharmHandler,
