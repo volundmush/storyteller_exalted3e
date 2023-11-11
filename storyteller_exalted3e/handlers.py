@@ -4,17 +4,17 @@ from athanor.utils import partial_match, validate_name
 import storyteller
 from storyteller.utils import dramatic_capitalize
 
-from storyteller.handlers import StatHandler, PowerHandler, StatPowerHandler, CustomPowerHandler
+from storyteller.handlers import (
+    StatHandler,
+    PowerHandler,
+    StatPowerHandler,
+    CustomPowerHandler,
+    AbilityHandler as _AbilityHandler,
+)
 
 
-class AbilityHandler(StatHandler):
-    choices = settings.STORYTELLER_ABILITIES
-    stat_category = "Abilities"
-    plural_name = "Abilities"
-    singular_name = "Ability"
-    remove_zero = True
-    name = "Abilities"
-    options = ("set", "delete", "tag", "untag")
+class AbilityHandler(_AbilityHandler):
+    pass
 
 
 class StyleHandler(StatHandler):
