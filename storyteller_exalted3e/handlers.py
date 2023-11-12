@@ -5,61 +5,96 @@ import storyteller
 from storyteller.utils import dramatic_capitalize
 
 from storyteller.handlers import (
-    StatHandler,
-    PowerHandler,
-    StatPowerHandler,
-    CustomPowerHandler,
+    StatHandler as _StatHandler,
+    PowerHandler as _PowerHandler,
+    StatPowerHandler as _StatPowerHandler,
+    CustomPowerHandler as _CustomPowerHandler,
+    TemplateHandler as _TemplateHandler,
+    FieldHandler as _FieldHandler,
+    AttributeHandler as _AttributeHandler,
     AbilityHandler as _AbilityHandler,
+    SpecialtyHandler as _SpecialtyHandler,
+    MeritHandler as _MeritHandler,
+    FlawHandler as _FlawHandler,
 )
 
 
-class AbilityHandler(_AbilityHandler):
+class TemplateHandler(_TemplateHandler):
     pass
 
 
-class StyleHandler(StatHandler):
+class FieldHandler(_FieldHandler):
+    pass
+
+
+class AttributeHandler(_AttributeHandler):
+    @property
+    def options(self):
+        t = self.template()
+        out = ["set", "rank"]
+        if extra := getattr(t, "attribute_options", None):
+            out.extend(extra)
+        return set(out)
+
+    def render_help_extra(self, lines):
+        super().render_help_extra(lines)
+        t = self.template()
+        if tier := getattr(t, "attribute_tier", None):
+            lines.append(f"  |wTier|n: {tier}")
+
+
+class AbilityHandler(_AbilityHandler):
+    options = ("set", "rank", "tier")
+
+    @property
+    def options(self):
+        t = self.template()
+        out = ["set", "rank"]
+        if extra := getattr(t, "ability_options", None):
+            out.extend(extra)
+        return set(out)
+
+    def render_help_extra(self, lines):
+        super().render_help_extra(lines)
+        t = self.template()
+        if tier := getattr(t, "ability_tier", None):
+            lines.append(f"  |wTier|n: {tier}")
+
+
+class SpecialtyHandler(_SpecialtyHandler):
+    pass
+
+
+class MeritHandler(_MeritHandler):
+    pass
+
+
+class FlawHandler(_FlawHandler):
+    pass
+
+
+class StyleHandler(_StatHandler):
     stat_category = "Styles"
     plural_name = "Martial Arts Styles"
     singular_name = "Martial Arts Style"
     remove_zero = True
     name = "Styles"
     options = ("set", "delete")
-
-    def get_choice(self, entry: str) -> str:
-        name = validate_name(entry, thing_type=self.singular_name)
-        return dramatic_capitalize(name)
+    load_order = 21
+    dynamic_choices = True
 
 
-class XCharmHandler(PowerHandler):
+class _BaseCharmHandler(_PowerHandler):
     plural_name = "Charms"
     singular_name = "Charm"
-    name = "XCharms"
-    family = "Charms"
+    load_order = 60
 
-    def get_categories(self) -> list[str]:
-        return list(storyteller.TEMPLATES.values())
+    def get_choices(self) -> list[str]:
+        return list(self.game.templates.values())
 
-    def get_category(self, name: str) -> str:
-        if not name:
-            raise ValueError(f"No {self.singular_name} category given.")
-        choices = self.get_categories()
-        if not (category := partial_match(name, choices)):
-            raise ValueError(
-                f"No {self.singular_name} category found matching '{name}'. Choices are: {', '.join(choices)}"
-            )
-        return category
-
-    def get_subcategory(self, category: str, name: str) -> str:
-        if not name:
-            raise ValueError(f"No {category} {self.singular_name} category given.")
-        choices = category.charm_categories
-
-        if not (subcategory := partial_match(name, choices)):
-            raise ValueError(
-                f"No {category} {self.plural_name} subcategory found matching '{name}'. Choices are: {', '.join(choices)}"
-            )
-
-        return subcategory
+    def get_subcategory_choices(self, operation, category: str):
+        t = self.game.templates.get(category)
+        return t.charm_categories
 
     def render_name(self):
         return "Charms"
@@ -74,38 +109,73 @@ class XCharmHandler(PowerHandler):
         return f"{category} {subcategory} Charm: {name}"
 
 
-class CharmHandler(XCharmHandler):
-    name = "Charms"
-
-    def prepare_args(self, path, value, method) -> list:
-        path.insert(0, str(self.owner.st_template.get()))
-        return super().prepare_args(path, value, method)
+class OtherCharmHandler(_BaseCharmHandler):
+    name = "OtherCharms"
+    family = "Charms"
+    load_order = 62
 
 
-class MartialHandler(StatPowerHandler):
-    name = "Martial"
+class NativeCharmHandler(_BaseCharmHandler):
+    name = "NativeCharms"
+    load_order = 61
+
+    def modify_path(self, path):
+        path.insert(0, str(self.template().name))
+
+    def render_help_choices(self, lines):
+        t = self.template().name
+        if choices := self.game.templates.get(t).charm_categories:
+            lines.append(f"  |wChoices|n: {', '.join([str(x) for x in choices])}")
+
+
+class MartialHandler(_StatPowerHandler):
+    name = "MartialArtsCharms"
     stat_category = "Styles"
     singular_name = "Martial Arts Charm"
+    load_order = 63
 
 
-class EvocationHandler(CustomPowerHandler):
+class EvocationHandler(_CustomPowerHandler):
     name = "Evocations"
     stat_category = "Merits"
     stat = "Artifact"
     singular_name = "Evocation"
+    load_order = 64
 
 
-class SpellHandler(PowerHandler):
-    name = "Spells"
+class _SpellHandler(_PowerHandler):
     category = "Spells"
     categories = {
         "Sorcery": ["Terrestrial", "Celestial", "Solar"],
         "Necromancy": ["Ivory", "Shadow", "Void"],
     }
     singular_name = "Spell"
-    plural_name = "Spells"
-    options = ("add", "remove", "tag", "untag")
+    options = ("add", "remove", "tier")
     family = "Spells"
+    load_order = 100
 
-    def render_rank(self, rank) -> str:
-        return f"{rank.power.subcategory} Circle {rank.power.category} {self.singular_name}: {rank.power.name}"
+    def modify_path(self, path):
+        path.insert(0, self.name)
+
+    def get_choices(self):
+        return list(self.categories.keys())
+
+    def get_subcategory_choices(self, operation, category: str):
+        return self.categories.get(category)
+
+    def render_help_choices(self, lines):
+        if choices := self.categories.get(self.name, None):
+            lines.append(f"  |wChoices|n: {', '.join([str(x) for x in choices])}")
+
+    def render_help_extra(self, lines):
+        super().render_help_extra(lines)
+        lines.append(f"  |wTier|n: Normal: |w0|n, Control: |w1|n")
+
+
+class SorceryHandler(_SpellHandler):
+    name = "Sorcery"
+
+
+class NecromancyHandler(_SpellHandler):
+    name = "Necromancy"
+    load_order = 101

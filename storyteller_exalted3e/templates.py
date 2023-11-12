@@ -1,4 +1,3 @@
-from django.conf import settings
 from storyteller.base import Template
 
 _EXIGENT_CHARMS = ["Offensive", "Defensive", "Social", "Mobility and Travel"]
@@ -26,6 +25,8 @@ class Solar(_Ex3Template):
     field_defaults = {"Caste": "Dawn"}
     field_choices = {"Caste": ["Dawn", "Zenith", "Twilight", "Night", "Eclipse"]}
     native_charms = "Solar"
+    ability_tier = "Normal: |w0|n, Favored: |w1|n, Caste: |w2|n, Supernal: |w3|n"
+    ability_options = ["tier"]
 
     @property
     def charm_categories(self):
@@ -37,6 +38,8 @@ class Lunar(_Ex3Template):
     field_defaults = {"Caste": "Casteless"}
     field_choices = {"Caste": ["Full Moon", "Changing Moon", "No Moon", "Casteless"]}
     native_charms = "Lunar"
+    attribute_options = ["tier"]
+    attribute_tier = "Normal: |w0|n, Favored: |w1|n, Caste: |w2|n"
 
     @property
     def charm_categories(self):
@@ -77,6 +80,8 @@ class Abyssal(Solar):
     field_defaults = {"Caste": "Dusk"}
     field_choices = {"Caste": ["Dusk", "Midnight", "Daybreak", "Day", "Moonshadow"]}
     native_charms = "Abyssal"
+    ability_tier = "Normal: |w0|n, Favored: |w1|n, Caste: |w2|n, Chthonic: |w3|n"
+    ability_options = ["tier"]
 
 
 class Infernal(Solar):
@@ -84,6 +89,8 @@ class Infernal(Solar):
     field_defaults = {"Caste": "Azimuth"}
     field_choices = {"Caste": ["Azimuth", "Ascendant", "Horizon", "Nadir", "Penumbra"]}
     native_charms = "Infernal"
+    ability_tier = "Normal: |w0|n, Favored: |w1|n, Caste: |w2|n, Profane: |w3|n"
+    ability_options = ["tier"]
 
 
 class Alchemical(_Ex3Template):
@@ -100,6 +107,8 @@ class Alchemical(_Ex3Template):
         ]
     }
     native_charms = "Alchemical"
+    attribute_options = ["tier"]
+    attribute_tier = "Normal: |w0|n, Favored: |w1|n, Caste: |w2|n"
 
     @property
     def charm_categories(self):
