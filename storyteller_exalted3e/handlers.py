@@ -1,3 +1,4 @@
+import math
 from django.conf import settings
 
 from athanor.utils import partial_match, validate_name
@@ -11,11 +12,14 @@ from storyteller.handlers import (
     CustomPowerHandler as _CustomPowerHandler,
     TemplateHandler as _TemplateHandler,
     FieldHandler as _FieldHandler,
+    AdvantageHandler as _AdvantageHandler,
     AttributeHandler as _AttributeHandler,
     AbilityHandler as _AbilityHandler,
     SpecialtyHandler as _SpecialtyHandler,
     MeritHandler as _MeritHandler,
     FlawHandler as _FlawHandler,
+    FooterHandler as _FooterHandler,
+    PoolHandler as _PoolHandler,
 )
 
 
@@ -61,6 +65,10 @@ class AbilityHandler(_AbilityHandler):
             lines.append(f"  |wTier|n: {tier}")
 
 
+class AdvantageHandler(_AdvantageHandler):
+    pass
+
+
 class SpecialtyHandler(_SpecialtyHandler):
     pass
 
@@ -85,15 +93,15 @@ class StyleHandler(_StatHandler):
 
 
 class _BaseCharmHandler(_PowerHandler):
-    plural_name = "Charms"
     singular_name = "Charm"
     load_order = 60
+    family = "Charms"
 
     def get_choices(self) -> list[str]:
         return list(self.game.templates.values())
 
     def get_subcategory_choices(self, operation, category: str):
-        t = self.game.templates.get(category)
+        t = self.game.templates.get(category) if isinstance(category, str) else category
         return t.charm_categories
 
     def render_name(self):
@@ -118,6 +126,7 @@ class OtherCharmHandler(_BaseCharmHandler):
 class NativeCharmHandler(_BaseCharmHandler):
     name = "NativeCharms"
     load_order = 61
+    sheet_render = False
 
     def modify_path(self, path):
         path.insert(0, str(self.template().name))
@@ -179,3 +188,45 @@ class SorceryHandler(_SpellHandler):
 class NecromancyHandler(_SpellHandler):
     name = "Necromancy"
     load_order = 101
+    sheet_render = False
+
+
+class FooterHandler(_FooterHandler):
+    def render_sheet_final(self, viewer, width, lines):
+        self.render_sheet_triheader(
+            viewer, width, lines, ["Pools", "Tracks", "Experience"]
+        )
+        widths = self.tri_split_width(width - 4)
+
+        self.render_sheet_tricolumns(viewer, width, lines, [[], [], []])
+
+        rendered_columns = list()
+        phandler = self.base.handlers_dict["Pools"]
+        pools = phandler.all(pool_type="Pool")
+
+        pools_rendered = list()
+        max_widths = max([len(str(pool)) for pool in pools])
+        for pool in pools:
+            pools_rendered.append(
+                f"{' ' * math.floor(widths[0] / 6)}{str(pool):>{max_widths}}: {pool.total_available(self.owner):0<2}/{pool.calculate_max(self.owner):0<2}".ljust(
+                    widths[0]
+                )
+            )
+
+        tracks = phandler.all(pool_type="Track")
+        tracks_rendered = list()
+        max_widths = max([len(str(track)) for track in tracks])
+        for track in tracks:
+            tracks_rendered.append(
+                f"{' ' * math.floor(widths[1] / 6)}{str(track):>{max_widths}}: {track.total_available(self.owner):0<2}/{track.calculate_max(self.owner):0<2}".ljust(
+                    widths[1]
+                )
+            )
+        experience = list()
+        columns = [pools_rendered, tracks_rendered, experience]
+
+        self.render_sheet_tricolumns(viewer, width, lines, columns)
+
+
+class PoolHandler(_PoolHandler):
+    pass

@@ -7,6 +7,7 @@ class Exalted3e(Game):
         super().__init__(alias, name, key=key)
         self.setup_handlers("storyteller_exalted3e.handlers")
         self.setup_templates("storyteller_exalted3e.templates")
+        self.setup_pools("storyteller_exalted3e.pools")
         self.abilities = [
             "Archery",
             "Athletics",
